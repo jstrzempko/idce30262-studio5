@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Mapping Water Points</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <script src='https://api.mapbox.com/mapbox-gl-js/v1.11.1/mapbox-gl.js'></script>
+  <link href='https://api.mapbox.com/mapbox-gl-js/v1.11.1/mapbox-gl.css' rel='stylesheet' />
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@5/turf.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+
+    #instructions {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 350px;
+      background-color: #fff;
+      padding: 5px 20px 5px 20px;
+      border-radius: 10px;
+      font-family: Lato, sans-serif;
+    }
+
+    #legend {
+      position: absolute;
+      top: 650px;
+      right: 15%;
+      padding: 10px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      line-height: 18px;
+      height: 150px;
+      width: 100px;
+    }
+
+    .legend-key {
+      display: inline-block;
+      border-radius: 20%;
+      width: 10px;
+      height: 10px;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <div id="instructions">
+    <h2>🚰 Instructions</h2>
+    <p>Click anywhere on the map to see water sites within a 500 meter radius. <br> Stand alone water sites will be highlighted in red.</p>
+  </div>
+  <!-- Add a legend to the map -->
+  <div class='map-overlay' id='legend'>
+    <p>Here is a legend</p>
+  </div>
+
+  <script>
+    // Data showing water points - replace the dummy URL with your own.
+    var url = 'https://raw.githubusercontent.com/jstrzempko/idce30262-studio5/main/data/Zaatari_refugee_camp_water_simplified.geojson'
+
+    // add mapbox access token
+    mapboxgl.accessToken =
+      'pk.eyJ1IjoianN0cnplbXBrbyIsImEiOiJja2xoN3FnaHMwMHVnMnVtZ3R4ZGhyMWlkIn0.A-mfTeGCl1XSWMWhimG5HA';
+
+    var map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/satellite-v9', // imagery basemap - you may choose something else
+      center: [36.3295, 32.2963], // starting position at Zaatari Camp
+      zoom: 14, // starting zoom
+    });
+
+    map.on('load', function() {
+
+      // Map layers go here!
+      map.addLayer({
+        id: 'OSM-water',
+        source: {
+          type: 'geojson',
+          data: url,
+        },
+        type: 'circle',
+        paint: {
+          'circle-color': '#83e8fc',
+          'circle-radius': 3,
+          'circle-opacity': 1,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#0557fa',
+        }
+      });
+
+      // When the map has finished loading, add a new layer that will be empty
+      // at first, but will eventually house our confirmed water sites.
+      map.addLayer({
+        id: 'selected-water',
+        source: {
+          type: 'geojson',
+          data: {
+            'type': 'FeatureCollection',
+            'features': []
+          },
+        },
+        type: 'circle',
+        paint: {
+          'circle-color': 'red',
+          'circle-radius': 3,
+        }
+      });
+
+      // Draw the search radius on the map
+      map.addLayer({
+        id: 'search-radius',
+        source: {
+          type: 'geojson',
+          data: {
+            'type': 'FeatureCollection',
+            'features': [],
+          }
+        },
+        type: 'fill',
+        paint: {
+          'fill-color': '#fcf683',
+          'fill-opacity': 0.5,
+        }
+      });
+
+    });
+
+    //Click event goes here!
+    map.on('click', function(e) {
+      var eventLngLat = [e.lngLat.lng, e.lngLat.lat];
+      //console.log(eventLngLat),
+      var searchRadius = makeRadius(eventLngLat, 500);
+      map.getSource('search-radius').setData(searchRadius);
+      var featuresInBuffer = spatialJoin('OSM-water', searchRadius);
+      map.getSource('selected-water').setData(turf.featureCollection(featuresInBuffer));
+    });
+
+    //makeRadius function goes here!
+    function makeRadius(lngLatArray, radiusInMeters) {
+      var point = turf.point(lngLatArray)
+      var buffered = turf.buffer(point, radiusInMeters, {
+        units: 'meters',
+      });
+      return buffered;
+    }
+
+    //spatialJoin function goes here!
+    function spatialJoin(sourceLayer, filterFeature) {
+      // Need this line to specify the array since map.getSource in the click event doesn't do this.
+      sourceGeoJSON = map.querySourceFeatures(sourceLayer);
+      // Loop through all the features in the source geojson and return the ones that
+      // are inside the filter feature (buffered radius) and are confirmed landing sites
+      var joined = sourceGeoJSON.filter(function(feature) {
+        return turf.booleanPointInPolygon(feature, filterFeature) && feature.properties.type === 'Free_standing';
+      });
+
+      return joined;
+    };
+  </script>
+
+</body>
+
+</html>
