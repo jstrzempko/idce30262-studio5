@@ -13,11 +13,21 @@
   <link href='https://api.mapbox.com/mapbox-gl-js/v1.11.1/mapbox-gl.css' rel='stylesheet' />
   <!-- Adding in mapbox turf for analysis functionality -->
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@5/turf.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+
+  <link href="https://fonts.googleapis.com/css2?family=Oswald&display=swap" rel="stylesheet">
   <!-- add styling information for the page-->
   <style>
     body {
       margin: 0;
       padding: 0;
+    }
+
+    h2 {
+      color: #101010;
+      font-size: 1.5em;
+      font-family: 'Oswald', sans-serif;
     }
 
     #map {
@@ -64,7 +74,7 @@
   <div id="map"></div>
   <!-- create a div for the instructions-->
   <div id="instructions">
-    <h2>🚰 Instructions</h2>
+    <h2>🚰 INSTRUCTIONS  instructions</h2>
     <p>Click anywhere on the map to see water sites within a 500 meter radius. <br> Stand alone water sites will be highlighted in red.</p>
   </div>
   <!-- Add a legend to the map -->
