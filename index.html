@@ -108,94 +108,96 @@
     // tell the page what order to load the layers in
     map.on('load', function() {
 
-      // after the basemap, next load the water points
-      map.addLayer({
-        id: 'OSM-water',
-        source: {
-          type: 'geojson',
-          data: url,
-        },
-        type: 'circle',
-        // symbologize the geojson with paint
-        paint: {
-          'circle-color': '#00008b',
-          'circle-radius': 3,
-          'circle-opacity': 1,
-          'circle-stroke-color': '#0557fa',
-          'circle-stroke-width': 1,
-        }
-      });
+              // after the radius, load the water points
+              map.addLayer({
+                id: 'OSM-water',
+                source: {
+                  type: 'geojson',
+                  data: url,
+                },
+                type: 'circle',
+                // symbologize the geojson with paint
+                paint: {
+                  'circle-color': '#00008b',
+                  'circle-radius': 3,
+                  'circle-opacity': 1,
+                  'circle-stroke-color': '#0557fa',
+                  'circle-stroke-width': 1,
+                }
+              });
 
-      // add a new layer that will be empty at first
-      // but will eventually house our confirmed water sites.
-      map.addLayer({
-        id: 'selected-water',
-        source: {
-          type: 'geojson',
-          data: {
-            'type': 'FeatureCollection',
-            'features': []
-          },
-        },
-        // symbologize them differently in red
-        type: 'circle',
-        paint: {
-          'circle-color': '#11daf5',
-          'circle-radius': 3,
-        }
-      });
+              // Draw the search radius on the map in yellow
+              map.addLayer({
+                id: 'search-radius',
+                source: {
+                  type: 'geojson',
+                  data: {
+                    'type': 'FeatureCollection',
+                    'features': [],
+                  }
+                },
+                type: 'fill',
+                paint: {
+                  'fill-color': '#fcf683',
+                  'fill-opacity': 0.4,
+                  'fill-outline-color': '#b32f04',
+                }
+              });
 
-      // Draw the search radius on the map in yellow
-      map.addLayer({
-        id: 'search-radius',
-        source: {
-          type: 'geojson',
-          data: {
-            'type': 'FeatureCollection',
-            'features': [],
+              // add a new layer that will be empty at first
+              // but will eventually house our confirmed water sites.
+              map.addLayer({
+                id: 'selected-water',
+                source: {
+                  type: 'geojson',
+                  data: {
+                    'type': 'FeatureCollection',
+                    'features': []
+                  },
+                },
+                // symbologize them differently in red
+                type: 'circle',
+                paint: {
+                  'circle-color': '#11daf5',
+                  'circle-radius': 3,
+                  'circle-stroke-color': '#0557fa',
+                  'circle-stroke-width': 1,
+                }
+              });
+
+            });
+
+          // tell the map what to do when a click event happens
+          map.on('click', function(e) {
+            var eventLngLat = [e.lngLat.lng, e.lngLat.lat];
+            //console.log(eventLngLat),
+            var searchRadius = makeRadius(eventLngLat, 500);
+            map.getSource('search-radius').setData(searchRadius);
+            var featuresInBuffer = spatialJoin('OSM-water', searchRadius);
+            map.getSource('selected-water').setData(turf.featureCollection(featuresInBuffer));
+          });
+
+          // function to create 500 m radius around click event's lat, lon
+          function makeRadius(lngLatArray, radiusInMeters) {
+            var point = turf.point(lngLatArray)
+            var buffered = turf.buffer(point, radiusInMeters, {
+              units: 'meters',
+            });
+            return buffered;
           }
-        },
-        type: 'fill',
-        paint: {
-          'fill-color': '#fcf683',
-          'fill-opacity': 0.3,
-          'fill-outline-color': '#000',
-        }
-      });
 
-    });
-
-    // tell the map what to do when a click event happens
-    map.on('click', function(e) {
-      var eventLngLat = [e.lngLat.lng, e.lngLat.lat];
-      //console.log(eventLngLat),
-      var searchRadius = makeRadius(eventLngLat, 500);
-      map.getSource('search-radius').setData(searchRadius);
-      var featuresInBuffer = spatialJoin('OSM-water', searchRadius);
-      map.getSource('selected-water').setData(turf.featureCollection(featuresInBuffer));
-    });
-
-    // function to create 500 m radius around click event's lat, lon
-    function makeRadius(lngLatArray, radiusInMeters) {
-      var point = turf.point(lngLatArray)
-      var buffered = turf.buffer(point, radiusInMeters, {
-        units: 'meters',
-      });
-      return buffered;
-    }
-
-    // use spatialJoin to join the
-    function spatialJoin(sourceLayer, filterFeature) {
-      // Need this line to specify the array since map.getSource in the click event doesn't do this.
-      sourceGeoJSON = map.querySourceFeatures(sourceLayer);
-      // Loop through all the features in the source geojson and return the ones that
-      // are inside the filter feature (buffered radius) and are confirmed standalone water stations
-      var joined = sourceGeoJSON.filter(function(feature) {
-        return turf.booleanPointInPolygon(feature, filterFeature) && feature.properties.type === 'Free_standing';
-      });
-      // return these joined sites (which will appear in red)
-      return joined;
-    };
+          // use spatialJoin to join the
+          function spatialJoin(sourceLayer, filterFeature) {
+            // Need this line to specify the array since map.getSource in the click event doesn't do this.
+            sourceGeoJSON = map.querySourceFeatures(sourceLayer);
+            // Loop through all the features in the source geojson and return the ones that
+            // are inside the filter feature (buffered radius) and are confirmed standalone water stations
+            var joined = sourceGeoJSON.filter(function(feature) {
+              return turf.booleanPointInPolygon(feature, filterFeature) && feature.properties.type === 'Free_standing';
+            });
+            // return these joined sites (which will appear in red)
+            return joined;
+          };
   </script>
 
 </body>
