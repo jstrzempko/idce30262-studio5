@@ -107,7 +107,8 @@
   <div id="background">
     <h1>BACKGROUND</h1>
     <h3><a href='https://data2.unhcr.org/en/situations/syria/location/53'>The Zaatari refugee camp</a> in Jordan is the largest camp to house Syrian refugees. Originally established in 2012 in response to the outbreak of the Syrian Civil War, it has
-      since developed into a permanent settlement. This map uses <a href='https://www.openstreetmap.org/#map=15/32.2931/36.3227&layers=H'>Open Street Map</a> data of drinking water points to determine <a href='https://handbook.spherestandards.org/en/sphere/#ch006_004'>clean water access within 500 meters</a> of where the user clicks on the map.</h3>
+      since developed into a permanent settlement. This map uses <a href='https://www.openstreetmap.org/#map=15/32.2931/36.3227&layers=H'>Open Street Map</a> data of drinking water points to determine <a
+        href='https://handbook.spherestandards.org/en/sphere/#ch006_004'>clean water access within 500 meters</a> of where the user clicks on the map.</h3>
   </div>
 
   <script>
@@ -187,7 +188,7 @@
     });
 
     // tell the map what to do when a click event happens
-    map.on('click', function(e) {
+    map.on('click', function (e) {
       var eventLngLat = [e.lngLat.lng, e.lngLat.lat];
       //console.log(eventLngLat),
       var searchRadius = makeRadius(eventLngLat, 500);
