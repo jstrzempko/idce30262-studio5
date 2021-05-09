@@ -24,10 +24,30 @@
       padding: 0;
     }
 
+    h1 {
+      color: #fafafa;
+      font-size: 1.5em;
+      font-family: 'Source Code Pro', monospace;
+    }
+
     h2 {
       color: #101010;
       font-size: 1.5em;
       font-family: 'Source Code Pro', monospace;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-family: 'Lato', sans-serif;
+      line-height: 1.4em;
+      color: #fafafa;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-family: 'Lato', sans-serif;
+      line-height: 1.4em;
+      color: #fafafa;
     }
 
     p {
@@ -35,6 +55,12 @@
       font-family: 'Lato', sans-serif;
       line-height: 1.4em;
       color: #202020;
+    }
+
+    a {
+      color: #add8e6;
+      background-color: transparent;
+      text-decoration: none;
     }
 
     #map {
@@ -55,23 +81,15 @@
       font-family: Lato, sans-serif;
     }
 
-    #legend {
+    #background {
       position: absolute;
-      top: 650px;
-      right: 15%;
-      padding: 10px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      line-height: 18px;
-      height: 150px;
-      width: 100px;
-    }
-
-    .legend-key {
-      display: inline-block;
-      border-radius: 20%;
-      width: 10px;
-      height: 10px;
-      margin-right: 5px;
+      top: 20px;
+      right: 20px;
+      width: 350px;
+      background-color: #3f3f3f;
+      padding: 5px 20px 5px 20px;
+      border-radius: 10px;
+      font-family: Lato, sans-serif;
     }
   </style>
 </head>
@@ -82,11 +100,14 @@
   <!-- create a div for the instructions-->
   <div id="instructions">
     <h2>🚰 INSTRUCTIONS</h2>
-    <p>Click anywhere on the map to see water sites within a 500 meter radius. <strong>Stand alone water sites</strong> will be highlighted in red.</p>
+    <p>Click anywhere on the map to see water sites within a 500 meter radius.
+      <strong>Stand alone water sites</strong> will be highlighted with a light blue water icon <img src="images/maki-water-custom.png" height=17px>.
+    </p>
   </div>
-  <!-- Add a legend to the map -->
-  <div id='legend'>
-    <p>Here is a legend</p>
+  <div id="background">
+    <h1>BACKGROUND</h1>
+    <h3><a href='https://data2.unhcr.org/en/situations/syria/location/53'>The Zaatari refugee camp</a> in Jordan is the largest camp to house Syrian refugees. Originally established in 2012 in response to the outbreak of the Syrian Civil War, it has
+      since developed into a permanent settlement. This map uses <a href='https://www.openstreetmap.org/#map=15/32.2931/36.3227&layers=H'>Open Street Map</a> data of drinking water points to determine <a href='https://handbook.spherestandards.org/en/sphere/#ch006_004'>clean water access within 500 meters</a> of where the user clicks on the map.</h3>
   </div>
 
   <script>
@@ -100,7 +121,7 @@
     // create the map variable with mapbox gl
     var map = new mapboxgl.Map({
       container: 'map',
-      style: 'mapbox://styles/mapbox/satellite-v9', // basemap
+      style: 'mapbox://styles/jstrzempko/ckohc63o50pf618nozdqi9yhx', // basemap
       center: [36.3295, 32.2963], // starting position at Zaatari Camp
       zoom: 14, // starting zoom
     });
@@ -108,96 +129,94 @@
     // tell the page what order to load the layers in
     map.on('load', function() {
 
-              // after the radius, load the water points
-              map.addLayer({
-                id: 'OSM-water',
-                source: {
-                  type: 'geojson',
-                  data: url,
-                },
-                type: 'circle',
-                // symbologize the geojson with paint
-                paint: {
-                  'circle-color': '#00008b',
-                  'circle-radius': 3,
-                  'circle-opacity': 1,
-                  'circle-stroke-color': '#0557fa',
-                  'circle-stroke-width': 1,
-                }
-              });
+      // after the radius, load the water points
+      map.addLayer({
+        id: 'OSM-water',
+        source: {
+          type: 'geojson',
+          data: url,
+        },
+        type: 'circle',
+        // symbologize the geojson with paint
+        paint: {
+          'circle-color': '#00008b',
+          'circle-radius': 5,
+          'circle-opacity': 1,
+          'circle-stroke-color': '#0557fa',
+          'circle-stroke-width': 1,
+        }
+      });
 
-              // Draw the search radius on the map in yellow
-              map.addLayer({
-                id: 'search-radius',
-                source: {
-                  type: 'geojson',
-                  data: {
-                    'type': 'FeatureCollection',
-                    'features': [],
-                  }
-                },
-                type: 'fill',
-                paint: {
-                  'fill-color': '#fcf683',
-                  'fill-opacity': 0.4,
-                  'fill-outline-color': '#b32f04',
-                }
-              });
-
-              // add a new layer that will be empty at first
-              // but will eventually house our confirmed water sites.
-              map.addLayer({
-                id: 'selected-water',
-                source: {
-                  type: 'geojson',
-                  data: {
-                    'type': 'FeatureCollection',
-                    'features': []
-                  },
-                },
-                // symbologize them differently in red
-                type: 'circle',
-                paint: {
-                  'circle-color': '#11daf5',
-                  'circle-radius': 3,
-                  'circle-stroke-color': '#0557fa',
-                  'circle-stroke-width': 1,
-                }
-              });
-
-            });
-
-          // tell the map what to do when a click event happens
-          map.on('click', function(e) {
-            var eventLngLat = [e.lngLat.lng, e.lngLat.lat];
-            //console.log(eventLngLat),
-            var searchRadius = makeRadius(eventLngLat, 500);
-            map.getSource('search-radius').setData(searchRadius);
-            var featuresInBuffer = spatialJoin('OSM-water', searchRadius);
-            map.getSource('selected-water').setData(turf.featureCollection(featuresInBuffer));
-          });
-
-          // function to create 500 m radius around click event's lat, lon
-          function makeRadius(lngLatArray, radiusInMeters) {
-            var point = turf.point(lngLatArray)
-            var buffered = turf.buffer(point, radiusInMeters, {
-              units: 'meters',
-            });
-            return buffered;
+      // Draw the search radius on the map in yellow
+      map.addLayer({
+        id: 'search-radius',
+        source: {
+          type: 'geojson',
+          data: {
+            'type': 'FeatureCollection',
+            'features': [],
           }
+        },
+        type: 'fill',
+        paint: {
+          'fill-color': '#fcf683',
+          'fill-opacity': 0.4,
+          'fill-outline-color': '#b32f04',
+        }
+      });
 
-          // use spatialJoin to join the
-          function spatialJoin(sourceLayer, filterFeature) {
-            // Need this line to specify the array since map.getSource in the click event doesn't do this.
-            sourceGeoJSON = map.querySourceFeatures(sourceLayer);
-            // Loop through all the features in the source geojson and return the ones that
-            // are inside the filter feature (buffered radius) and are confirmed standalone water stations
-            var joined = sourceGeoJSON.filter(function(feature) {
-              return turf.booleanPointInPolygon(feature, filterFeature) && feature.properties.type === 'Free_standing';
-            });
-            // return these joined sites (which will appear in red)
-            return joined;
-          };
+      // add a new layer that will be empty at first
+      // but will eventually house our confirmed water sites.
+      map.addLayer({
+        id: 'selected-water',
+        source: {
+          type: 'geojson',
+          data: {
+            'type': 'FeatureCollection',
+            'features': []
+          },
+        },
+        type: 'symbol',
+        layout: {
+          'icon-image': 'maki-water-custom',
+          'icon-size': 1,
+          'icon-allow-overlap': true,
+        }
+      });
+
+    });
+
+    // tell the map what to do when a click event happens
+    map.on('click', function(e) {
+      var eventLngLat = [e.lngLat.lng, e.lngLat.lat];
+      //console.log(eventLngLat),
+      var searchRadius = makeRadius(eventLngLat, 500);
+      map.getSource('search-radius').setData(searchRadius);
+      var featuresInBuffer = spatialJoin('OSM-water', searchRadius);
+      map.getSource('selected-water').setData(turf.featureCollection(featuresInBuffer));
+    });
+
+    // function to create 500 m radius around click event's lat, lon
+    function makeRadius(lngLatArray, radiusInMeters) {
+      var point = turf.point(lngLatArray)
+      var buffered = turf.buffer(point, radiusInMeters, {
+        units: 'meters',
+      });
+      return buffered;
+    }
+
+    // use spatialJoin to join the
+    function spatialJoin(sourceLayer, filterFeature) {
+      // Need this line to specify the array since map.getSource in the click event doesn't do this.
+      sourceGeoJSON = map.querySourceFeatures(sourceLayer);
+      // Loop through all the features in the source geojson and return the ones that
+      // are inside the filter feature (buffered radius) and are confirmed standalone water stations
+      var joined = sourceGeoJSON.filter(function(feature) {
+        return turf.booleanPointInPolygon(feature, filterFeature) && feature.properties.type === 'Free_standing';
+      });
+      // return these joined sites (which will appear in red)
+      return joined;
+    };
   </script>
 
 </body>
